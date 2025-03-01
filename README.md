@@ -25,5 +25,5 @@ Autor: **Javier Comyn Rodríguez**
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Profile-blue?logo=linkedin)](https://www.linkedin.com/in/javier-comyn-rodriguez)
 
 ---
-Este proyecto se desarrolla como Trabajo de Fin de Grado en Matemáticas e Informática en la ETSIINF de la UPM.
+Este proyecto se desarrolla como TFG del Grado en Matemáticas e Informática en la ETSIINF de la UPM.
 
