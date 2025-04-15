@@ -16,9 +16,29 @@ TODO
 
 ## Instalación y Configuración
 TODO 
+virtual env
+
+instalar requirements.txt
+
+
+Configura el Entorno:
+Crea un archivo .env en el mismo directorio del script con tu clave de API y el endpoint base si es necesario:
+GITHUB_TOKEN ="tu_github_token"
+GITHUB_MODELS_ENDPOINT="endpoint_base" # Opcional, si usas un endpoint diferente al de OpenAI
+LLM_MODEL_NAME="modelo" # Cambia a otro modelo si lo deseas
+# Opcional si usas Cohere para re-ranking:
+# COHERE_API_KEY="tu_cohere_api_key"
+
+Prepara los Documentos:
+Crea una carpeta llamada diabetes_docs en el mismo directorio. (no está en el repositorio por motivos de privacidad)
+Coloca dentro todos los archivos PDF mencionados en tu TFG (guías clínicas, libros, etc.).
+
+
 
 ## Uso del Sistema
-(Se actualizará conforme avance la implementación del prototipo)
+ejecitar main dos veces:
+1. Primero para crear el índice de los documentos y guardarlo en un archivo pickle.
+2. Luego, ejecuta el script para iniciar el asistente de diabetes.
 
 ## Contacto
 Autor: **Javier Comyn Rodríguez**  

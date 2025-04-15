@@ -1,0 +1,14 @@
+langchain
+langchain-mistralai
+langchain-openai
+langchain-community 
+langchain-huggingface 
+langchain-chroma
+langgraph
+python-dotenv
+pypdf
+chromadb
+sentence-transformers 
+cryptography
+rank_bm25 
+# faiss-cpu
