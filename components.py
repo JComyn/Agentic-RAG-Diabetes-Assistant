@@ -1,6 +1,6 @@
 import warnings
 from langchain_mistralai.chat_models import ChatMistralAI
-from langchain_huggingface import HuggingFaceEmbeddings
+# from langchain_huggingface import HuggingFaceEmbeddings   # Uncomment if using HuggingFace for embeddings
 from langchain_openai import OpenAIEmbeddings
 from langchain_chroma import Chroma
 from langchain.storage import InMemoryStore
@@ -10,7 +10,9 @@ from langchain_community.retrievers import BM25Retriever
 from langchain.retrievers import EnsembleRetriever
 from langchain.retrievers.document_compressors import CrossEncoderReranker
 from langchain_community.cross_encoders import HuggingFaceCrossEncoder
-from langchain_core.documents import Document # Import Document
+from langchain_core.documents import Document 
+
+from tavily import TavilyClient
 
 import config
 
@@ -25,19 +27,19 @@ llm = ChatMistralAI(
     model=config.LLM_MODEL_NAME,
     mistral_api_key=config.GITHUB_TOKEN,
     endpoint=config.GITHUB_MODELS_ENDPOINT,
-    temperature=0.2, # A low temperature for more deterministic responses
+    temperature=0.15, # A low temperature for more deterministic responses
 )
 print("LLM Initialized.")
 
 # Embeddings Model
-print(f"Loading Embedding Model: {config.EMBEDDING_MODEL_NAME} via GitHub Models API")
+print(f"Loading Embedding Model: {config.EMBEDDING_MODEL_NAME} via GitHub Models")
 embedding_model = OpenAIEmbeddings(
     model=config.EMBEDDING_MODEL_NAME,
     openai_api_key=config.GITHUB_TOKEN,
     openai_api_base=config.GITHUB_MODELS_ENDPOINT # Use the specific endpoint
     # Add other parameters like 'chunk_size' if needed, check OpenAIEmbeddings documentation
 )
-print("Embedding Model Initialized (API).")
+print("Embedding Model Initialized.")
 
 # Vector Store and Document Store
 print(f"Initializing Vector Store from: {config.VECTORSTORE_PATH}")
@@ -45,16 +47,31 @@ vectorstore = Chroma(
     persist_directory=config.VECTORSTORE_PATH,
     embedding_function=embedding_model
 )
-store = InMemoryStore()
+store = InMemoryStore() 
 print("Vector Store and Document Store Initialized.")
+
+# --- Web Search Component (Tavily) ---
+print("Initializing Tavily Search API...")
+try:
+    
+    # Inicializamos si existe la clave API
+    if hasattr(config, 'TAVILY_API_KEY') and config.TAVILY_API_KEY:
+        tavily_client = TavilyClient(api_key=config.TAVILY_API_KEY)
+        print("Tavily Search initialized successfully.")
+    else:
+        tavily_client = None
+        print("WARNING: Tavily API key not found. Web search capabilities disabled.")
+except ImportError:
+    tavily_client = None
+    print("WARNING: tavily-python package not installed. Web search capabilities disabled.")
+
+print("All components initialized.")
 
 # Chunking Strategy
 parent_splitter = RecursiveCharacterTextSplitter(chunk_size=config.PARENT_CHUNK_SIZE)
 child_splitter = RecursiveCharacterTextSplitter(chunk_size=config.CHILD_CHUNK_SIZE)
 
 # Base Semantic Retriever: ParentDocumentRetriever
-# Note: We still need the ParentDocumentRetriever to populate the 'store' during indexing
-# and potentially as part of the ensemble.
 parent_retriever = ParentDocumentRetriever(
     vectorstore=vectorstore,
     docstore=store, # The InMemoryStore for parent docs
@@ -72,7 +89,7 @@ def load_child_docs_from_storage(vs: Chroma) -> list[Document]:
 
     IDEAL FIX: Modify indexing.py to save child docs explicitly and load them here.
     """
-    print("Attempting to load child docs from vectorstore for BM25 (Workaround)...")
+    print("Attempting to load child docs from vectorstore for BM25...")
     try:
         # Fetch all documents. Note: This might be inefficient for large stores.
         # The exact method might vary slightly based on Chroma version.
@@ -111,7 +128,7 @@ if child_docs:
     # Ensemble Retriever
     ensemble_retriever = EnsembleRetriever(
         retrievers=[bm25_retriever, semantic_retriever], # Use BM25 and pure semantic search
-        weights=[0.4, 0.6], # Adjust weights as needed 
+        weights=[0.4, 0.6], # Adjust weights as needed
         search_kwargs={"k": config.ENSEMBLE_K} # How many results the ensemble should return
     )
     print("Ensemble Retriever Initialized.")
@@ -125,7 +142,7 @@ else:
 
 
 # --- Re-ranker Component (Optional, set USE_RERANKER=True to enable) ---
-USE_RERANKER = True # Set to True to enable the re-ranker below
+USE_RERANKER = False # Set to True to enable the re-ranker below
 
 if USE_RERANKER:
     print("Initializing Re-ranker...")
@@ -138,7 +155,7 @@ if USE_RERANKER:
          base_retriever=base_retriever_for_reranking
     )
     final_retriever = reranker_retriever # Use re-ranker if enabled
-    print("Re-ranker Initialized.")
+    print("Re-ranker Initialized. Using it for final retrieval.")
 else:
     # If re-ranker is not used, the final retriever is the base one chosen earlier
     final_retriever = base_retriever_for_reranking

@@ -10,12 +10,17 @@ from langgraph.graph import END # Import END for graph termination
 # Import necessary components
 from components import (
     llm,
-    base_retriever_for_reranking as initial_retriever,
-    reranker_compressor,
+    tavily_client,
+    final_retriever as retriever, # Use the final retriever configured in components.py
     USE_RERANKER
 )
 
-# --- Enhanced Agent State Definition ---
+from config import (
+    RERANK_TOP_N,
+    WEB_SEARCH_MAX_RESULTS
+)
+
+# --- Agent State Definition ---
 ValidationStatus = Literal['sufficient', 'insufficient_reretrieve', 'insufficient_clarify', 'error']
 
 class AgentState(TypedDict):
@@ -37,7 +42,7 @@ class AgentState(TypedDict):
 # --- Agent Nodes (Functions for LangGraph) ---
 
 # 1. Query Transformer Agent
-def transform_query_node(state: AgentState, config: RunnableConfig): # Changed config_run to config
+def transform_query_node(state: AgentState, config: RunnableConfig):
     """Transforms the user query for better retrieval."""
     print("--- Node: Transform Query ---")
     original_query = state["original_query"]
@@ -49,7 +54,7 @@ def transform_query_node(state: AgentState, config: RunnableConfig): # Changed c
     ])
     chain = prompt | llm | StrOutputParser()
     try:
-        transformed_query = chain.invoke({"query": original_query, "chat_history": chat_history}, config=config) # Pass config
+        transformed_query = chain.invoke({"query": original_query, "chat_history": chat_history}, config=config) 
         print(f"Original Query: {original_query}")
         print(f"Transformed Query: {transformed_query}")
         # Reset re-retrieval counter when transforming query
@@ -59,60 +64,55 @@ def transform_query_node(state: AgentState, config: RunnableConfig): # Changed c
         return {"transformed_query": original_query, "error_message": f"Error transforming query: {e}", "reretrieval_attempts": 0} # Fallback
 
 # 2. Document Retriever Agent
-def retrieve_documents_node(state: AgentState, config: RunnableConfig): # Changed config_run to config
-    """Retrieves documents using the initial retriever."""
+def retrieve_documents_node(state: AgentState, config: RunnableConfig):
+    """Retrieves documents using the configured retriever."""
     print("--- Node: Retrieve Documents ---")
     query = state["transformed_query"] or state["original_query"]
     print(f"Retrieving documents for query: {query}")
     try:
-        retrieved_docs = initial_retriever.invoke(query)
-        print(f"Retrieved {len(retrieved_docs)} documents initially.")
+        # Usar retriever configurado en components.py
+        retrieved_docs = retriever.invoke(query)
+        print(f"Retrieved {len(retrieved_docs)} documents.")
         return {"retrieved_docs": retrieved_docs, "error_message": None}
     except Exception as e:
         print(f"Error in retrieve_documents_node: {e}")
         return {"retrieved_docs": [], "error_message": f"Error retrieving documents: {e}"}
 
 # 3. Document Validator Agent (LLM Enhanced)
-def validate_documents_node(state: AgentState, config: RunnableConfig): # Changed config_run to config
-    """Validates documents using re-ranking and an LLM assessment."""
+def validate_documents_node(state: AgentState, config: RunnableConfig):
+    """Validates documents using LLM assessment."""
     print("--- Node: Validate Documents ---")
     retrieved_docs = state.get("retrieved_docs")
     query = state["transformed_query"] or state["original_query"]
-    current_attempts = state.get("reretrieval_attempts", 0) # Get current attempts
+    current_attempts = state.get("reretrieval_attempts", 0)
 
     if not retrieved_docs:
         print("Validation failed: No documents retrieved.")
-        # If no docs, definitely need to re-retrieve or clarify
-        # Increment attempts if we decide to re-retrieve
         return {
             "validated_docs": [],
             "validation_status": "insufficient_reretrieve",
             "error_message": "No documents to validate.",
-            "reretrieval_attempts": current_attempts + 1 # Increment attempts for the next cycle
+            "reretrieval_attempts": current_attempts + 1
         }
 
     try:
-        # --- Step 1: Re-ranking (if enabled) ---
-        if USE_RERANKER and reranker_compressor:
-            print(f"Re-ranking {len(retrieved_docs)} documents...")
-            # Pass config if the compressor supports it (check specific implementation)
-            docs_to_validate = reranker_compressor.compress_documents(retrieved_docs, query)
-            print(f"Re-ranked down to {len(docs_to_validate)} documents.")
+        if USE_RERANKER:
+            docs_to_validate = retrieved_docs
+            print("Using " f"{len(docs_to_validate)} documents for validation (re-ranking applied)")
         else:
-            print("Re-ranking disabled or compressor not available. Using top N retrieved docs.")
-            docs_to_validate = retrieved_docs[:config.RERANK_TOP_N]
-
+            docs_to_validate = retrieved_docs[:RERANK_TOP_N] # Limit to top N for validation (to avoid exceeding token limits)
+            print("Using " f"{len(docs_to_validate)} documents for validation (no re-ranking applied)")
+            
         if not docs_to_validate:
-             print("Validation failed: No documents remaining after re-ranking.")
-             # Increment attempts if we decide to re-retrieve
-             return {
-                 "validated_docs": [],
-                 "validation_status": "insufficient_reretrieve",
-                 "error_message": "No documents after re-ranking.",
-                 "reretrieval_attempts": current_attempts + 1 # Increment attempts
-             }
+            print("Validation failed: No documents to validate.")
+            return {
+                "validated_docs": [],
+                "validation_status": "insufficient_reretrieve",
+                "error_message": "No documents to validate.",
+                "reretrieval_attempts": current_attempts + 1
+            }
 
-        # --- Step 2: LLM Assessment ---
+        # --- LLM Assessment ---
         print("Performing LLM validation assessment...")
         context_for_validation = "\n\n---\n\n".join([f"Document {i+1}:\n{doc.page_content}" for i, doc in enumerate(docs_to_validate)])
 
@@ -125,8 +125,8 @@ Documentos proporcionados:
 
 Analiza los documentos en relación a la consulta y responde ÚNICAMENTE con un objeto JSON que contenga:
 1. "decision": Una de las siguientes opciones: "sufficient", "insufficient_reretrieve", "insufficient_clarify".
-    - "sufficient": Si los documentos tratan sobre el tema principal de la consulta y contienen información que permite formular una respuesta útil y fundamentada.
-    - "insufficient_reretrieve": Si la MAYORÍA de los documentos son irrelevantes o solo tocan el tema de forma muy tangencial, haciendo difícil construir una respuesta útil. Una nueva búsqueda podría ser necesaria.
+    - "sufficient": Si los documentos tratan sobre el tema principal de la consulta y contienen información que permite formular una respuesta útil.
+    - "insufficient_reretrieve": Si la MAYORÍA de los documentos son irrelevantes o solo tocan el tema de forma muy tangencial, haciendo difícil construir una respuesta. Una nueva búsqueda podría ser necesaria.
     - "insufficient_clarify": Si los documentos son irrelevantes PORQUE la consulta es demasiado ambigua para ser respondida adecuadamente, necesitando aclaración del usuario.
 2. "reasoning": Una breve explicación (1-2 frases) de tu decisión.
 3. "clarification_question" (OPCIONAL): Si la decisión es "insufficient_clarify", formula una pregunta específica al usuario para obtener la información necesaria.
@@ -161,29 +161,102 @@ O
         # Create the chain starting from the messages list
         validation_chain = RunnableLambda(lambda _: messages) | llm | parser_with_fallback
 
-        # Invoke the chain - no input dictionary needed for the prompt part now
-        llm_assessment = validation_chain.invoke({}, config=config) # Pass config for LLM call
+        # Invoke the chain 
+        llm_assessment = validation_chain.invoke({}, config=config) 
 
         print(f"LLM Validation Assessment: {llm_assessment}")
 
         decision = llm_assessment.get("decision", "error")
         clarification_q = llm_assessment.get("clarification_question")
 
-        # Map LLM decision to ValidationStatus type
+        if decision == "insufficient_reretrieve" and tavily_client:
+            print("Local documents insufficient - attempting web search via Tavily...")
+            try:
+                # Perform web search
+                search_results = tavily_client.search(
+                    query=query,
+                    search_depth="advanced",
+                    max_results=WEB_SEARCH_MAX_RESULTS
+                )
+                
+                # Convert search results to Document objects
+                web_docs = []
+                for result in search_results.get('results', []):
+                    content = f"TITLE: {result.get('title', 'No title')}\n"
+                    content += f"CONTENT: {result.get('content', 'No content')}\n"
+                    content += f"URL: {result.get('url', 'No URL')}"
+                    
+                    web_docs.append(Document(
+                        page_content=content,
+                        metadata={
+                            "source": "web_search",
+                            "url": result.get('url', 'No URL'),
+                            "title": result.get('title', 'No title'),
+                            "score": result.get('score', 0)
+                        }
+                    ))
+                
+                if web_docs:
+                    print(f"Retrieved {len(web_docs)} documents from web search.")
+                    
+                    # Combine with existing documents
+                    combined_docs = docs_to_validate + web_docs
+                    
+                    # Re-assess with LLM using the combined documents
+                    context_for_validation = "\n\n---\n\n".join([
+                        f"Document {i+1} ({'Web' if doc.metadata.get('source') == 'web_search' else 'Local'}):\n{doc.page_content}" 
+                        for i, doc in enumerate(combined_docs)
+                    ])
+                    
+                    # Update system message to include info about web sources
+                    system_message_content = f"""Eres un asistente experto en validación de información sobre diabetes. Tu tarea es evaluar si los documentos proporcionados son RELEVANTES y ofrecen una BUENA BASE para responder a la consulta del usuario.
+La consulta es: "{query}"
+
+Documentos proporcionados (incluyen fuentes locales y web):
+{context_for_validation}
+
+Analiza los documentos en relación a la consulta y responde ÚNICAMENTE con un objeto JSON que contenga:
+1. "decision": Una de las siguientes opciones: "sufficient", "insufficient_reretrieve", "insufficient_clarify".
+2. "reasoning": Una breve explicación (1-2 frases) de tu decisión.
+3. "clarification_question" (OPCIONAL): Si la decisión es "insufficient_clarify", formula una pregunta específica al usuario.
+"""
+                    # Create updated messages
+                    web_validation_messages = [
+                        SystemMessage(content=system_message_content),
+                        HumanMessage(content="Evalúa los documentos proporcionados y responde en formato JSON según las instrucciones.")
+                    ]
+                    
+                    # Create and invoke the updated chain
+                    web_validation_chain = RunnableLambda(lambda _: web_validation_messages) | llm | parser_with_fallback
+                    web_assessment = web_validation_chain.invoke({}, config=config)
+                    
+                    print(f"Web-enhanced LLM Assessment: {web_assessment}")
+                    
+                    # If web search improved the results to sufficient, use the combined docs
+                    if web_assessment.get("decision") == "sufficient":
+                        print("Web search provided sufficient information!")
+                        return {
+                            "validated_docs": combined_docs,
+                            "validation_status": "sufficient",
+                            "error_message": None,
+                            "reretrieval_attempts": current_attempts
+                        }
+                else:
+                    print("Web search returned no results.")
+            except Exception as web_e:
+                print(f"Error during web search: {web_e}")
+                # Continue with normal flow if web search fails
+
+        # Map LLM decision to ValidationStatus type 
         validation_status: ValidationStatus
-        next_attempts = current_attempts # Default: don't increment if sufficient/clarify/error
+        next_attempts = current_attempts
         if decision == "sufficient":
             validation_status = "sufficient"
         elif decision == "insufficient_reretrieve":
             validation_status = "insufficient_reretrieve"
-            next_attempts = current_attempts + 1 # Increment attempts only if re-retrieving
+            next_attempts = current_attempts + 1
         elif decision == "insufficient_clarify":
             validation_status = "insufficient_clarify"
-        else:
-             print(f"Warning: LLM validator returned unexpected decision or error '{decision}'. Defaulting to error.")
-             validation_status = "error" # Treat parsing errors or unexpected decisions as errors
-             # Optionally, could default to insufficient_reretrieve and increment attempts
-             # next_attempts = current_attempts + 1
 
         return {
             "validated_docs": docs_to_validate if validation_status == "sufficient" else [], # Only pass docs if sufficient
@@ -207,7 +280,6 @@ O
 
 
 # --- Confidence Assessment Chain (Helper Function) ---
-# It's often cleaner to define helper chains outside the node function
 
 confidence_prompt = ChatPromptTemplate.from_messages([
     ("system", """Eres un evaluador experto de respuestas de asistentes de IA sobre diabetes. Tu tarea es determinar si la respuesta proporcionada es CONFIABLE y responde DIRECTAMENTE a la pregunta del usuario. No tienes acceso al contexto original, solo a la pregunta y la respuesta. Responde únicamente con "high" o "low".

@@ -127,8 +127,8 @@ celerybeat.pid
 # SageMath parsed files
 *.sage.py
 
-# Environments
-.env
+# Environments (keys, virtualenvs, etc.)
+.env 
 .venv
 env/
 venv/
@@ -170,9 +170,11 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
-
+# Documento del TFG
 TFG___Javier_Comyn.pdf
 
+# Carpeta con los documentos de la base de datos
 diabetes_docs
 
+# Base de datos de diabetes (chroma)
 chroma_db_diabetes

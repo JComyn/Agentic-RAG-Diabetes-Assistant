@@ -3,7 +3,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# --- Constants based on TFG Design ---
 # API Keys and Endpoints for GitHub Models
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "YOUR_GITHUB_TOKEN") # Use GITHUB_TOKEN env var
 GITHUB_MODELS_ENDPOINT = "https://models.inference.ai.azure.com" # Specific endpoint
@@ -21,7 +20,11 @@ EMBEDDING_MODEL_NAME = "text-embedding-3-large" # Opción OpenAI via GitHub Mode
 
 # Paths and Directories
 VECTORSTORE_PATH = "./chroma_db_diabetes"
-DOCUMENTS_PATH = "./diabetes_docs" # Directorio con los PDFs del TFG Sec 3.1
+DOCUMENTS_PATH = "./diabetes_docs" # Directorio con los PDFs a indexar
+
+# Tavily API Key 
+TAVILY_API_KEY = os.getenv("TAVILY_API_KEY", "YOUR_TAVILY_API_KEY") # Use TAVILY_API_KEY env var
+WEB_SEARCH_MAX_RESULTS = 5
 
 # Chunking and Retrieval Parameters
 PARENT_CHUNK_SIZE = 2000 # Tamaño más grande para el contexto del ParentDocumentRetriever
