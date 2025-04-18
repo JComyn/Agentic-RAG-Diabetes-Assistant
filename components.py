@@ -31,12 +31,12 @@ llm = ChatMistralAI(
 )
 print("LLM Initialized.")
 
-# Embeddings Model
+# Embeddings Model. Change to HuggingFaceEmbeddings if using HuggingFace models
 print(f"Loading Embedding Model: {config.EMBEDDING_MODEL_NAME} via GitHub Models")
 embedding_model = OpenAIEmbeddings(
     model=config.EMBEDDING_MODEL_NAME,
     openai_api_key=config.GITHUB_TOKEN,
-    openai_api_base=config.GITHUB_MODELS_ENDPOINT # Use the specific endpoint
+    openai_api_base=config.EMBEDDING_MODEL_ENDPOINT,
     # Add other parameters like 'chunk_size' if needed, check OpenAIEmbeddings documentation
 )
 print("Embedding Model Initialized.")

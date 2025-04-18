@@ -4,7 +4,7 @@ from langchain_core.messages import BaseMessage, SystemMessage, HumanMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.output_parsers import StrOutputParser, JsonOutputParser
 from langchain_core.documents import Document
-from langchain_core.runnables import RunnablePassthrough, RunnableConfig, RunnableLambda
+from langchain_core.runnables import RunnableConfig, RunnableLambda
 from langgraph.graph import END # Import END for graph termination
 
 # Import necessary components
@@ -217,8 +217,11 @@ Documentos proporcionados (incluyen fuentes locales y web):
 
 Analiza los documentos en relación a la consulta y responde ÚNICAMENTE con un objeto JSON que contenga:
 1. "decision": Una de las siguientes opciones: "sufficient", "insufficient_reretrieve", "insufficient_clarify".
+    - "sufficient": Si los documentos tratan sobre el tema principal de la consulta y contienen información que permite formular una respuesta útil.
+    - "insufficient_reretrieve": Si la MAYORÍA de los documentos son irrelevantes o solo tocan el tema de forma muy tangencial, haciendo difícil construir una respuesta. Una nueva búsqueda podría ser necesaria.
+    - "insufficient_clarify": Si los documentos son irrelevantes PORQUE la consulta es demasiado ambigua para ser respondida adecuadamente, necesitando aclaración del usuario.
 2. "reasoning": Una breve explicación (1-2 frases) de tu decisión.
-3. "clarification_question" (OPCIONAL): Si la decisión es "insufficient_clarify", formula una pregunta específica al usuario.
+3. "clarification_question" (OPCIONAL): Si la decisión es "insufficient_clarify", formula una pregunta específica al usuario para obtener la información necesaria.
 """
                     # Create updated messages
                     web_validation_messages = [
@@ -319,7 +322,7 @@ def generate_answer_node(state: AgentState, config: RunnableConfig): # Changed c
     # print(f"Context for generation (first 500 chars):\n{context[:500]}...") # Optional: uncomment for debugging
 
     generation_prompt = ChatPromptTemplate.from_messages([
-         ("system", """Eres un asistente virtual experto en diabetes. Responde a la pregunta del usuario de forma clara, concisa y empática, basándote ESTRICTAMENTE en el contexto proporcionado. NO inventes información. Si la información no está en el contexto, indica que no puedes responder con la información disponible.
+         ("system", """Eres un asistente virtual experto en diabetes. Responde a la pregunta del usuario de forma clara, concisa y empática, basándote ESTRICTAMENTE en el contexto proporcionado. NO inventes información.
 
 Contexto:
 {context}

@@ -5,8 +5,8 @@ load_dotenv()
 
 # API Keys and Endpoints for GitHub Models
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "YOUR_GITHUB_TOKEN") # Use GITHUB_TOKEN env var
-GITHUB_MODELS_ENDPOINT = "https://models.inference.ai.azure.com" # Specific endpoint
-LLM_MODEL_NAME = "Mistral-Large-2411" # Specific model name from GitHub Models
+GITHUB_MODELS_ENDPOINT = "https://models.github.ai/inference" # Specific endpoint
+LLM_MODEL_NAME = "mistral-ai/Mistral-Large-2411" # Specific model name from GitHub Models
 
 # Embedding Model Configuration
 # EMBEDDING_MODEL_NAME = "nvidia/NV-Embed-v2" # Opción 1 
@@ -17,6 +17,7 @@ LLM_MODEL_NAME = "Mistral-Large-2411" # Specific model name from GitHub Models
 
 # Como mi portatil no tiene capacidad de ejecutar estos modelos en local, necesito alguno via API
 EMBEDDING_MODEL_NAME = "text-embedding-3-large" # Opción OpenAI via GitHub Models
+EMBEDDING_MODEL_ENDPOINT = "https://models.inference.ai.azure.com" # Specific endpoint for OpenAI models
 
 # Paths and Directories
 VECTORSTORE_PATH = "./chroma_db_diabetes"

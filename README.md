@@ -14,6 +14,10 @@ Este repositorio contiene el desarrollo del TFG titulado **"Sistema Multiagente 
 TODO
 ```
 
+
+
+Ground Truth Fuente (traducido al español):https://www.jmir.org/2024/1/e58041
+
 ## Instalación y Configuración
 TODO 
 virtual env
@@ -26,8 +30,8 @@ Crea un archivo .env en el mismo directorio del script con tu clave de API y el 
 GITHUB_TOKEN ="tu_github_token"
 GITHUB_MODELS_ENDPOINT="endpoint_base" # Opcional, si usas un endpoint diferente al de OpenAI
 LLM_MODEL_NAME="modelo" # Cambia a otro modelo si lo deseas
-# Opcional si usas Cohere para re-ranking:
-# COHERE_API_KEY="tu_cohere_api_key"
+
+TAVILY_API_KEY="tu_tavily_api_key" # Cambia a otro modelo si lo deseas
 
 Prepara los Documentos:
 Crea una carpeta llamada diabetes_docs en el mismo directorio. (no está en el repositorio por motivos de privacidad)
