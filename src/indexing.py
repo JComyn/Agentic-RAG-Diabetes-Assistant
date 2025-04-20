@@ -2,8 +2,8 @@ import warnings # Import the warnings module
 from langchain_community.document_loaders import PyPDFDirectoryLoader
 from langchain.retrievers import ParentDocumentRetriever
 
-import config
-from components import vectorstore, store, child_splitter, parent_splitter
+from . import config # Import config for paths and settings
+from .components import vectorstore, store, child_splitter, parent_splitter
 
 import logging
 logging.getLogger("pypdf").setLevel(logging.ERROR) # Set pypdf logging to ERROR level to suppress warnings ()

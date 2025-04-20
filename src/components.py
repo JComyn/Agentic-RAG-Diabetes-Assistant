@@ -14,7 +14,7 @@ from langchain_core.documents import Document
 
 from tavily import TavilyClient
 
-import config
+from . import config # Import config for paths and settings
 
 # Ignore specific warnings
 warnings.filterwarnings("ignore", category=UserWarning, module='transformers')

@@ -44,6 +44,10 @@ ejecitar main dos veces:
 1. Primero para crear el índice de los documentos y guardarlo en un archivo pickle.
 2. Luego, ejecuta el script para iniciar el asistente de diabetes.
 
+Make sure you have installed the requirements: pip install -r requirements.txt
+Open your terminal in the project root directory 
+Run the Streamlit app: streamlit run streamlit_app.py
+
 ## Contacto
 Autor: **Javier Comyn Rodríguez**  
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Profile-blue?logo=linkedin)](https://www.linkedin.com/in/javier-comyn-rodriguez)

@@ -2,11 +2,12 @@ import os
 from typing import List
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from langchain_core.runnables import RunnableConfig
+from langgraph.errors import GraphRecursionError # Add this import at the top
 
-import config # Import config for paths and settings
-from components import vectorstore # Import vectorstore for checking count
-from indexing import index_documents # Import indexing function
-from graph import app # Import the compiled graph app
+from src import config # Import config for paths and settings
+from src.components import vectorstore # Import vectorstore for checking count
+from src.indexing import index_documents # Import indexing function
+from src.graph import app # Import the compiled graph app
 
 
 # --- Function to run the chat interaction ---
@@ -37,9 +38,18 @@ def run_chat(query: str, chat_history: List[BaseMessage] = []):
 
         return final_answer, new_history
 
-    except Exception as e:
+    except GraphRecursionError as e: # Catch specific recursion error
+        print(f"Error: Graph recursion limit reached: {e}")
+        error_message = "Lo siento, el proceso se complicó y no pude completar tu solicitud. Intenta reformular la pregunta o simplificarla."
+        # Update history with specific error
+        new_history = chat_history + [
+            HumanMessage(content=query),
+            AIMessage(content=error_message)
+        ]
+        return error_message, new_history
+    except Exception as e: # Catch other general exceptions
         print(f"Error during chat execution: {e}")
-        error_message = "Lo siento, ocurrió un error al procesar tu solicitud."
+        error_message = "Lo siento, ocurrió un error inesperado al procesar tu solicitud."
         # Update history with error
         new_history = chat_history + [
             HumanMessage(content=query),

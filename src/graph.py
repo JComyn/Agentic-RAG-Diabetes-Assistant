@@ -1,5 +1,5 @@
 from langgraph.graph import StateGraph, END
-from agent import (
+from .agent import (
     AgentState,
     transform_query_node,
     retrieve_documents_node,
@@ -68,17 +68,3 @@ workflow.add_edge("ask_user_for_clarification", END) # End after setting the cla
 # Compile the graph
 app = workflow.compile()
 print("Multi-agent graph compiled.")
-
-# Optional: Visualize the graph
-# try:
-#     # Ensure you have matplotlib and pygraphviz installed
-#     # pip install matplotlib pygraphviz
-#     import pygraphviz
-#     from PIL import Image
-#     import io
-#     img_data = app.get_graph().draw_mermaid_png()
-#     img = Image.open(io.BytesIO(img_data))
-#     img.save("graph_enhanced_validator.png")
-#     print("Graph visualization saved to graph_enhanced_validator.png")
-# except Exception as e:
-#     print(f"Could not visualize graph (ensure pygraphviz and its dependencies are installed): {e}")

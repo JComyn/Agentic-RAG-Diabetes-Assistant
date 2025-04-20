@@ -8,14 +8,14 @@ from langchain_core.runnables import RunnableConfig, RunnableLambda
 from langgraph.graph import END # Import END for graph termination
 
 # Import necessary components
-from components import (
+from .components import (
     llm,
     tavily_client,
     final_retriever as retriever, # Use the final retriever configured in components.py
     USE_RERANKER
 )
 
-from config import (
+from .config import (
     RERANK_TOP_N,
     WEB_SEARCH_MAX_RESULTS
 )
