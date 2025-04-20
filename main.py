@@ -96,8 +96,11 @@ if __name__ == "__main__":
 
     print("\n--- Fin de la sesión ---")
     print("Gracias por usar el asistente de diabetes.")
+    
+    
+    # TODO: Interfaz con Streamlit 
 
-    # --- Evaluation Notes Placeholder -
+    # --- TODO: Evaluación -
     # Para evaluar este sistema:
     # 1. Preparar un dataset de preguntas y respuestas "Ground Truth" (TFG Sec 2.7.1.1).
     # 2. Ejecutar el sistema con las preguntas del dataset.

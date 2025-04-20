@@ -417,8 +417,6 @@ def decide_after_validation(state: AgentState):
         # The attempt counter was already incremented by the validation node
         if attempts <= MAX_RERETRIEVAL_ATTEMPTS:
             print(f"Routing back to retrieve_documents (Attempt {attempts} failed, next will be {attempts+1} if it happens).")
-            # TODO: Optionally modify the query here based on validation feedback before re-retrieving
-            # state["transformed_query"] = modify_query_based_on_failure(state["transformed_query"], state["validated_docs"])
             return "retrieve_documents" # Loop back to retrieval
         else:
             print(f"Validation insufficient, max re-retrieval attempts ({MAX_RERETRIEVAL_ATTEMPTS}) reached. Ending.")
@@ -448,8 +446,6 @@ def decide_after_generation(state: AgentState):
     # Decide based on confidence if no error
     if confidence == "low":
         print("Low confidence answer. Ending.")
-        # TODO: Could implement retry/clarify based on low confidence in the future
-        # For now, just end with the low-confidence answer generated.
         return "low_confidence" 
     elif confidence == "high":
         print("High confidence answer. Ending.")
