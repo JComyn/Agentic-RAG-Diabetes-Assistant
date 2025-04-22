@@ -131,7 +131,7 @@ Analiza los documentos en relación a la consulta y responde ÚNICAMENTE con un 
 2. "reasoning": Una breve explicación (1-2 frases) de tu decisión.
 3. "clarification_question" (OPCIONAL): Si la decisión es "insufficient_clarify", formula una pregunta específica al usuario para obtener la información necesaria.
 
-Ejemplo de respuesta JSON:
+Ejemplos de respuesta JSON:
 {{
   "decision": "sufficient",
   "reasoning": "Los documentos explican qué es la diabetes tipo 2 y mencionan sus síntomas principales, lo cual es suficiente para una respuesta inicial."
