@@ -53,7 +53,7 @@ workflow.add_conditional_edges(
     decide_after_generation, # Function decides based on confidence
     {
         "high_confidence": END, # End if confidence is high
-        "low_confidence": END,  # End for now if confidence is low
+        "low_confidence": "ask_user_for_clarification", # Ask user for clarification if confidence is low
         "handle_error": "handle_error"
         # Add mapping for END if decide_after_generation can return it
         # END: END
