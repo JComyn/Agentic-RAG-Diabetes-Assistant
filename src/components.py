@@ -21,7 +21,7 @@ warnings.filterwarnings("ignore", category=UserWarning, module='transformers')
 
 # --- Initialize Components ---
 
-# LLM
+# LLM (change to your preferred model)
 print(f"Initializing LLM: {config.LLM_MODEL_NAME} via GitHub Models")
 llm = ChatMistralAI(
     model=config.LLM_MODEL_NAME,

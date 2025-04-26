@@ -7,6 +7,9 @@ load_dotenv()
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "YOUR_GITHUB_TOKEN") # Use GITHUB_TOKEN env var
 GITHUB_MODELS_ENDPOINT = "https://models.github.ai/inference" # Specific endpoint
 LLM_MODEL_NAME = "mistral-ai/Mistral-Large-2411" # Specific model name from GitHub Models
+# API keys and endpoints for Mistral models (another option)
+MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY", "YOUR_MISTRAL_API_KEY") # Use MISTRAL_API_KEY env var
+LLM_MISTRAL_NAME = "mistral-large-latest" # It is the same as Mistral-Large-2411 but with a different name in the API
 
 # Embedding Model Configuration
 # EMBEDDING_MODEL_NAME = "nvidia/NV-Embed-v2" # Opción 1 
