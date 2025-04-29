@@ -107,18 +107,3 @@ if __name__ == "__main__":
     print("\n--- Fin de la sesión ---")
     print("Gracias por usar el asistente de diabetes.")
     
-     
-    # --- TODO: Evaluación -
-    # Para evaluar este sistema:
-    # 1. Preparar un dataset de preguntas y respuestas "Ground Truth" (TFG Sec 2.7.1.1).
-    # 2. Ejecutar el sistema con las preguntas del dataset.
-    # 3. Usar herramientas como Ragas :
-    #    - Calcular métricas de recuperación (Precision@K, Recall@K, MRR@K...)
-    #      comparando los 'documents' recuperados con los relevantes del Ground Truth.
-    #      (Necesitarías modificar el código para extraer los documentos recuperados).
-    #    - Calcular métricas de generación (ROUGE, BLEU, BERTScore, LLM-as-judge)
-    #      comparando 'final_answer' con las respuestas Ground Truth.
-    #    - Calcular métricas como 'faithfulness' (fidelidad al contexto) y 'answer relevancy'.
-    # 4. Medir latencia y otros aspectos (TFG Sec 2.7.3).
-    # 5. Iterar sobre el diseño (modelos, prompts, chunking, re-ranking) basándose
-    #    en los resultados de la evaluación y recalcular métricas.
