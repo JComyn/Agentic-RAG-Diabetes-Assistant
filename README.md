@@ -24,8 +24,6 @@ The system leverages LangGraph to create a cyclical process where agents collabo
 ├── README.md             # Project description and instructions
 ├── requirements.txt      # Python dependencies
 ├── streamlit_app.py      # Main Streamlit application file
-├── System flow diagram.png # Diagram illustrating the agent workflow
-├── example.png           # Example of the Streamlit interface
 ├── chroma_db_diabetes/   # ChromaDB persistent storage (it is created in the first run)
 ├── diabetes_docs/        # Folder for storing PDF documents for RAG - Create this folder
 ├── evaluation/           # Evaluation scripts and results
