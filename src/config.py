@@ -11,6 +11,14 @@ LLM_MODEL_NAME = "mistral-ai/Mistral-Large-2411" # Specific model name from GitH
 MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY", "YOUR_MISTRAL_API_KEY") # Use MISTRAL_API_KEY env var
 LLM_MISTRAL_NAME = "mistral-large-latest" # It is the same as Mistral-Large-2411 but with a different name in the API
 
+# Judge LLM
+JUDGE_ENDPOINT=os.getenv("JUDGE_ENDPOINT") 
+JUDGE_KEY=os.getenv("JUDGE_KEY")
+#embedding evaluation
+EMBEDDING_EVAL_KEY=os.getenv("EMBEDDING_EVAL_KEY")
+EMBEDDING_EVAL_ENDPOINT=os.getenv("EMBEDDING_EVAL_ENDPOINT")
+
+
 # Embedding Model Configuration
 # EMBEDDING_MODEL_NAME = "nvidia/NV-Embed-v2" # Opción 1 
 # EMBEDDING_MODEL_NAME = "Alibaba-NLP/gte-Qwen2-7B-instruct" # Opción 2 

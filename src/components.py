@@ -24,9 +24,9 @@ warnings.filterwarnings("ignore", category=UserWarning, module='transformers')
 # LLM (change to your preferred model)
 print(f"Initializing LLM: {config.LLM_MODEL_NAME} via GitHub Models")
 llm = ChatMistralAI(
-    model=config.LLM_MODEL_NAME,
-    mistral_api_key=config.GITHUB_TOKEN,
-    endpoint=config.GITHUB_MODELS_ENDPOINT,
+    model=config.LLM_MISTRAL_NAME,
+    mistral_api_key=config.MISTRAL_API_KEY,
+    #endpoint=config.GITHUB_MODELS_ENDPOINT,
     temperature=0.15, # A low temperature for more deterministic responses
 )
 print("LLM Initialized.")

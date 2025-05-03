@@ -178,3 +178,5 @@ diabetes_docs
 
 # Base de datos de diabetes (chroma)
 chroma_db_diabetes
+
+evaluation_intermediate_results.csv
