@@ -1,3 +1,13 @@
+# Attempt to use pysqlite3 for ChromaDB compatibility
+try:
+    __import__('pysqlite3')
+    import sys
+    sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+except ImportError:
+    # You can add a log or warning here if needed, e.g.,
+    # print("Warning: pysqlite3-binary not found or could not be loaded. ChromaDB might fail.")
+    pass
+
 import streamlit as st
 import os
 import io
