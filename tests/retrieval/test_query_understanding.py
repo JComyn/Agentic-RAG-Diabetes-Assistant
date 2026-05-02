@@ -57,8 +57,8 @@ def test_transform_query_node_integration(monkeypatch):
             return self
 
         def invoke(self, inputs, config=None):
-            # Deterministic transformed query text
-            return "TRANSFORMED QUERY TEXT"
+            # Deterministic transformed query text matching the original semantics
+            return "effects and treatments"
 
     # Prepare a minimal fake langchain_core package with required symbols so importing src.agent doesn't try to load real libraries
     langcore = types.ModuleType("langchain_core")
@@ -154,6 +154,15 @@ def test_transform_query_node_integration(monkeypatch):
     state = {"original_query": "effects and treatments", "chat_history": []}
     result = transform_query_node(state, config=None)
 
+    # Assert concrete semantics for the transformed query and its decomposition
     assert isinstance(result, dict)
-    assert 'subqueries' in result and isinstance(result['subqueries'], list)
-    assert 'query_is_ambiguous' in result and isinstance(result['query_is_ambiguous'], bool)
+    assert result.get("transformed_query") == "effects and treatments"
+    assert isinstance(result.get('subqueries'), list)
+    # Expect two subqueries corresponding to the two concepts
+    assert len(result['subqueries']) == 2
+    # Each subquery should semantically contain either 'effects' or 'treatments'
+    lower_subqs = [s.lower() for s in result['subqueries']]
+    assert any("effects" in s or "effect" in s for s in lower_subqs)
+    assert any("treat" in s for s in lower_subqs)
+    # For this original query, ambiguity should be False
+    assert result.get('query_is_ambiguous') is False
