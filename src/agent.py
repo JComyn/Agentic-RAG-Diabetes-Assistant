@@ -15,6 +15,7 @@ from .components import (
     USE_RERANKER
 )
 from .retrieval.query_understanding import split_into_subqueries, detect_ambiguity
+from .retrieval.pipeline import merge_dedup_and_score
 
 from .config import (
     RERANK_TOP_N,
@@ -90,7 +91,13 @@ def retrieve_documents_node(state: AgentState, config: RunnableConfig):
         # Usar retriever configurado en components.py
         retrieved_docs = retriever.invoke(query)
         print(f"Retrieved {len(retrieved_docs)} documents.")
-        return {"retrieved_docs": retrieved_docs, "error_message": None}
+        # Merge duplicates and compute evidence scores, then keep top K for re-ranking/validation
+        try:
+            scored_docs = merge_dedup_and_score(retrieved_docs, RERANK_TOP_N)
+        except Exception as e:
+            print(f"Error in merge_dedup_and_score: {e}")
+            scored_docs = retrieved_docs
+        return {"retrieved_docs": scored_docs, "error_message": None}
     except Exception as e:
         print(f"Error in retrieve_documents_node: {e}")
         return {"retrieved_docs": [], "error_message": f"Error retrieving documents: {e}"}
