@@ -48,3 +48,9 @@ RERANK_TOP_N = 50 # Número de documentos tras el re-ranking
 
 # Graph Configuration
 RECURSION_LIMIT = 5
+
+# Reliability configuration baseline
+EVIDENCE_SCORE_THRESHOLD = 0.62
+MAX_RETRIEVAL_RECOVERY_ATTEMPTS = 2
+CONSERVATIVE_MEDICAL_MODE = True
+JUDGE_UNSUPPORTED_CLAIM_THRESHOLD = 0.20
