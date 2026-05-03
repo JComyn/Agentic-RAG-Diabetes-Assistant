@@ -14,6 +14,10 @@ from .components import (
     final_retriever as retriever, # Use the final retriever configured in components.py
     USE_RERANKER
 )
+
+# Reliability and safety integrations
+from .reliability.judge import classify_reliability
+from .safety.policy import conservative_response
 from .retrieval.query_understanding import split_into_subqueries, detect_ambiguity
 from .retrieval.pipeline import merge_dedup_and_score
 
@@ -398,6 +402,25 @@ Contexto:
         final_answer = "Lo siento, ocurrió un error al generar la respuesta."
         confidence = "low"
         generation_error = f"Error generating answer: {gen_e}"
+
+    # --- Reliability judgement ---
+    try:
+        # Normalize evidence to simple strings
+        evidence_texts = [getattr(d, "page_content", str(d)) for d in documents]
+        reliability = classify_reliability(final_answer, evidence_texts)
+        print(f"Reliability Judge Result: {reliability}")
+        if reliability == "unsupported_claim":
+            # Replace answer with a conservative message if it contains unsupported claims
+            final_answer = "La respuesta contiene afirmaciones que no están respaldadas por la evidencia recuperada. No puedo afirmar eso con seguridad."
+            confidence = "low"
+    except Exception as judge_e:
+        print(f"Reliability judge failed: {judge_e}")
+
+    # --- Safety policy application ---
+    try:
+        final_answer = conservative_response(confidence, final_answer)
+    except Exception as policy_e:
+        print(f"Safety policy application failed: {policy_e}")
 
     # Return the state update
     return {
