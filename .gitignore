@@ -180,3 +180,6 @@ diabetes_docs
 chroma_db_diabetes
 
 evaluation_intermediate_results.csv
+.worktrees/
+
+.vscode/

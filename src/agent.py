@@ -15,6 +15,12 @@ from .components import (
     USE_RERANKER
 )
 
+# Reliability and safety integrations
+from .reliability.judge import classify_reliability
+from .safety.policy import conservative_response
+from .retrieval.query_understanding import split_into_subqueries, detect_ambiguity
+from .retrieval.pipeline import merge_dedup_and_score
+
 from .config import (
     RERANK_TOP_N,
     WEB_SEARCH_MAX_RESULTS
@@ -32,6 +38,9 @@ class AgentState(TypedDict):
     validated_docs: List[Document] | None # Docs after validation/re-ranking
     final_answer: str | None
     clarification_question: str | None # For asking the user
+    # Query understanding outputs
+    subqueries: List[str] | None
+    query_is_ambiguous: bool | None
     # Control flow fields
     validation_status: ValidationStatus | None
     generation_confidence: Literal['high', 'low', None]
@@ -57,11 +66,24 @@ def transform_query_node(state: AgentState, config: RunnableConfig):
         transformed_query = chain.invoke({"query": original_query, "chat_history": chat_history}, config=config) 
         print(f"Original Query: {original_query}")
         print(f"Transformed Query: {transformed_query}")
+        # Compute subqueries and ambiguity detection
+        base_for_split = transformed_query or original_query
+        try:
+            subqueries = split_into_subqueries(base_for_split)
+        except Exception:
+            subqueries = [base_for_split]
+        try:
+            query_is_ambiguous = detect_ambiguity(original_query) or detect_ambiguity(transformed_query)
+        except Exception:
+            query_is_ambiguous = False
         # Reset re-retrieval counter when transforming query
-        return {"transformed_query": transformed_query, "error_message": None, "reretrieval_attempts": 0}
+        return {"transformed_query": transformed_query, "subqueries": subqueries, "query_is_ambiguous": query_is_ambiguous, "error_message": None, "reretrieval_attempts": 0}
     except Exception as e:
         print(f"Error in transform_query_node: {e}")
-        return {"transformed_query": original_query, "error_message": f"Error transforming query: {e}", "reretrieval_attempts": 0} # Fallback
+        # On error, return original query and conservative defaults for new fields
+        fallback_subqueries = [original_query]
+        fallback_ambiguous = detect_ambiguity(original_query) if original_query else False
+        return {"transformed_query": original_query, "subqueries": fallback_subqueries, "query_is_ambiguous": fallback_ambiguous, "error_message": f"Error transforming query: {e}", "reretrieval_attempts": 0} # Fallback
 
 # 2. Document Retriever Agent
 def retrieve_documents_node(state: AgentState, config: RunnableConfig):
@@ -73,7 +95,13 @@ def retrieve_documents_node(state: AgentState, config: RunnableConfig):
         # Usar retriever configurado en components.py
         retrieved_docs = retriever.invoke(query)
         print(f"Retrieved {len(retrieved_docs)} documents.")
-        return {"retrieved_docs": retrieved_docs, "error_message": None}
+        # Merge duplicates and compute evidence scores, then keep top K for re-ranking/validation
+        try:
+            scored_docs = merge_dedup_and_score(retrieved_docs, RERANK_TOP_N)
+        except Exception as e:
+            print(f"Error in merge_dedup_and_score: {e}")
+            scored_docs = retrieved_docs
+        return {"retrieved_docs": scored_docs, "error_message": None}
     except Exception as e:
         print(f"Error in retrieve_documents_node: {e}")
         return {"retrieved_docs": [], "error_message": f"Error retrieving documents: {e}"}
@@ -374,6 +402,30 @@ Contexto:
         final_answer = "Lo siento, ocurrió un error al generar la respuesta."
         confidence = "low"
         generation_error = f"Error generating answer: {gen_e}"
+
+    # --- Reliability judgement ---
+    reliability_flagged = False
+    try:
+        # Normalize evidence to simple strings
+        evidence_texts = [getattr(d, "page_content", str(d)) for d in documents]
+        reliability = classify_reliability(final_answer, evidence_texts)
+        print(f"Reliability Judge Result: {reliability}")
+        if reliability == "unsupported_claim":
+            # Replace answer with a conservative message if it contains unsupported claims.
+            # Set reliability_flagged so the safety policy doesn't overwrite this message.
+            final_answer = "La respuesta contiene afirmaciones que no están respaldadas por la evidencia recuperada. No puedo afirmar eso con seguridad."
+            reliability_flagged = True
+    except Exception as judge_e:
+        print(f"Reliability judge failed: {judge_e}")
+
+    # --- Safety policy application ---
+    # Only apply the generic conservative fallback when reliability hasn't already
+    # provided a specific unsupported-claim explanation.
+    if not reliability_flagged:
+        try:
+            final_answer = conservative_response(confidence, final_answer)
+        except Exception as policy_e:
+            print(f"Safety policy application failed: {policy_e}")
 
     # Return the state update
     return {

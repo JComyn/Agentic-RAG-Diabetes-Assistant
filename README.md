@@ -97,3 +97,22 @@ Author: **Javier Comyn Rodríguez**
 
 ---
 This project was developed as a Final Degree Project (TFG) for the Bachelor's Degree in Mathematics and Computer Science at ETSIINF, UPM.
+
+## Reliability Regression Check
+
+- Integration test: tests/integration/test_agent_reliability_flow.py verifies that when the system has low or no retrieved evidence the agent responds with conservative language (e.g., "I don't have enough information to answer that confidently").
+
+- Run tests:
+
+```bash
+pytest -q
+```
+
+- Run final evaluation (produces ragas_evaluation_results.csv):
+
+```bash
+python -m evaluation.evaluation --evaluate-all
+```
+
+- Regression gate: after final evaluation completes, a faithfulness regression gate checks the mean faithfulness across examples. The evaluation will exit with a non-zero code if mean faithfulness < 0.75.
+
