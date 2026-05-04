@@ -1,5 +1,7 @@
 from typing import List, Union
 
+from src.config import JUDGE_UNSUPPORTED_CLAIM_THRESHOLD
+
 # Simple Spanish stopwords set for lightweight text comparison
 SPANISH_STOPWORDS = {
     "el", "la", "los", "las", "un", "una", "con", "y", "o", "de", "del",
@@ -15,7 +17,7 @@ def _tokenize(text: str) -> List[str]:
     return [w for w in words if w and w not in SPANISH_STOPWORDS]
 
 
-def classify_reliability(answer: str, evidence: Union[List[str], List[object]]) -> str:
+def classify_reliability(answer: str, evidence: Union[List[str], List[object]], threshold: float = JUDGE_UNSUPPORTED_CLAIM_THRESHOLD) -> str:
     """Classify the reliability of an answer given supporting evidence.
 
     Returns one of:
@@ -52,9 +54,9 @@ def classify_reliability(answer: str, evidence: Union[List[str], List[object]]) 
     overlap = answer_tokens.intersection(evidence_tokens)
     overlap_ratio = len(overlap) / len(answer_tokens)
 
-    # Heuristic thresholds: if less than 20% of answer tokens appear in evidence,
-    # treat as unsupported claim.
-    if overlap_ratio < 0.2:
+    # Heuristic thresholds: if less than the configured fraction of answer tokens appear in
+    # evidence, treat as unsupported claim.
+    if overlap_ratio < threshold:
         return "unsupported_claim"
 
     return "supported"

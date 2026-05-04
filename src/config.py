@@ -1,10 +1,10 @@
 import os
 try:
-	from dotenv import load_dotenv
+    from dotenv import load_dotenv
 except Exception:
-	# dotenv not installed in the environment used by the linter/IDE; provide a noop fallback
-	def load_dotenv():
-		return None
+    # dotenv not installed in the environment used by the linter/IDE; provide a noop fallback
+    def load_dotenv():
+        return None
 
 load_dotenv()
 

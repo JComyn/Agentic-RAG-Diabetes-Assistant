@@ -810,7 +810,101 @@ if __name__ == "__main__":
             sys.exit(1)
 
     else:
-        # ...existing code...
-        pass
+        # --- Incremental Processing Step ---
+        logging.info(f"--- Starting Incremental Processing (Start Index: {args.start_index}, Max New Questions: {args.max_questions}) ---")
 
-print("\n--- Fin de la Evaluación ---")
+        eval_df = load_evaluation_data(EVAL_CSV_PATH)
+        if eval_df is None:
+            sys.exit(1)
+
+        # Load existing results to avoid reprocessing
+        processed_questions = set()
+        if os.path.exists(INTERMEDIATE_RESULTS_PATH):
+            try:
+                intermediate_df = pd.read_csv(
+                    INTERMEDIATE_RESULTS_PATH,
+                    quotechar='"',
+                    engine='python',
+                    quoting=csv.QUOTE_NONNUMERIC,
+                    doublequote=True
+                )
+                intermediate_df['question'] = intermediate_df['question'].astype(str)
+                processed_questions = set(intermediate_df['question'].tolist())
+                logging.info(f"Loaded {len(processed_questions)} already processed questions from {INTERMEDIATE_RESULTS_PATH}")
+            except Exception as e:
+                logging.warning(f"Could not load or parse intermediate results file {INTERMEDIATE_RESULTS_PATH}. Starting fresh or potentially reprocessing. Error: {e}")
+                processed_questions = set()
+
+        questions_processed_this_run = 0
+        total_questions_in_gt = len(eval_df)
+        new_results_list = []
+
+        for index, row in eval_df.iterrows():
+            if index < args.start_index:
+                continue
+
+            question = row['question']
+            ground_truth = row['ground_truth']
+
+            if str(question) in processed_questions:
+                logging.debug(f"Skipping already processed question (Index {index}): {str(question)[:80]}...")
+                continue
+
+            if questions_processed_this_run >= args.max_questions:
+                logging.info(f"Reached max number of new questions for this run ({args.max_questions}). Stopping.")
+                break
+
+            logging.info(f"Processing question {index + 1}/{total_questions_in_gt}: {str(question)[:80]}...")
+            answer, contexts = run_system_for_evaluation(question)
+
+            try:
+                contexts_str = json.dumps(contexts, ensure_ascii=False)
+            except TypeError as e:
+                logging.error(f"Could not serialize contexts to JSON for question '{question}': {e}. Saving as empty list string.")
+                contexts_str = "[]"
+
+            result_data = {
+                "question": question,
+                "answer": answer,
+                "contexts": contexts_str,
+                "ground_truth": ground_truth
+            }
+            new_results_list.append(result_data)
+            processed_questions.add(str(question))
+            questions_processed_this_run += 1
+
+        if new_results_list:
+            new_results_df = pd.DataFrame(new_results_list)
+            try:
+                file_exists = os.path.exists(INTERMEDIATE_RESULTS_PATH) and os.path.getsize(INTERMEDIATE_RESULTS_PATH) > 0
+                new_results_df.to_csv(
+                    INTERMEDIATE_RESULTS_PATH,
+                    mode='a',
+                    header=not file_exists,
+                    index=False,
+                    encoding='utf-8',
+                    quoting=csv.QUOTE_NONNUMERIC,
+                    doublequote=True
+                )
+                logging.info(f"Appended {len(new_results_list)} new results to {INTERMEDIATE_RESULTS_PATH}")
+            except Exception as e:
+                logging.error(f"Error saving intermediate results: {e}", exc_info=True)
+
+        logging.info(f"Incremental processing run finished. Processed {questions_processed_this_run} new questions.")
+        current_total_processed = 0
+        if os.path.exists(INTERMEDIATE_RESULTS_PATH):
+            try:
+                current_total_processed = len(pd.read_csv(INTERMEDIATE_RESULTS_PATH))
+            except Exception:
+                current_total_processed = len(processed_questions)
+
+        remaining_questions = total_questions_in_gt - current_total_processed
+        logging.info(f"Total processed questions now: {current_total_processed}. Estimated remaining: {max(0, remaining_questions)}")
+
+        if remaining_questions > 0:
+            next_start_index = args.start_index + questions_processed_this_run
+            logging.info(f"To continue, run again potentially starting around index {next_start_index} or check the intermediate file.")
+        else:
+            logging.info("All questions seem to be processed based on count. Run with --evaluate-all to get final RAGAS scores.")
+
+    print("\n--- Fin de la Evaluación ---")

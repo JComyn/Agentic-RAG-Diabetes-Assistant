@@ -404,23 +404,28 @@ Contexto:
         generation_error = f"Error generating answer: {gen_e}"
 
     # --- Reliability judgement ---
+    reliability_flagged = False
     try:
         # Normalize evidence to simple strings
         evidence_texts = [getattr(d, "page_content", str(d)) for d in documents]
         reliability = classify_reliability(final_answer, evidence_texts)
         print(f"Reliability Judge Result: {reliability}")
         if reliability == "unsupported_claim":
-            # Replace answer with a conservative message if it contains unsupported claims
+            # Replace answer with a conservative message if it contains unsupported claims.
+            # Set reliability_flagged so the safety policy doesn't overwrite this message.
             final_answer = "La respuesta contiene afirmaciones que no están respaldadas por la evidencia recuperada. No puedo afirmar eso con seguridad."
-            confidence = "low"
+            reliability_flagged = True
     except Exception as judge_e:
         print(f"Reliability judge failed: {judge_e}")
 
     # --- Safety policy application ---
-    try:
-        final_answer = conservative_response(confidence, final_answer)
-    except Exception as policy_e:
-        print(f"Safety policy application failed: {policy_e}")
+    # Only apply the generic conservative fallback when reliability hasn't already
+    # provided a specific unsupported-claim explanation.
+    if not reliability_flagged:
+        try:
+            final_answer = conservative_response(confidence, final_answer)
+        except Exception as policy_e:
+            print(f"Safety policy application failed: {policy_e}")
 
     # Return the state update
     return {

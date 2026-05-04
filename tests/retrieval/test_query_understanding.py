@@ -49,7 +49,7 @@ def test_transform_query_node_integration(monkeypatch):
     fake_components.tavily_client = None
     fake_components.final_retriever = None
     fake_components.USE_RERANKER = False
-    sys.modules["src.components"] = fake_components
+    monkeypatch.setitem(sys.modules, "src.components", fake_components)
 
     # Fake chain returned by prompt | llm | parser
     class FakeChain:
@@ -133,20 +133,20 @@ def test_transform_query_node_integration(monkeypatch):
 
     prompts.ChatPromptTemplate = type("ChatPromptTemplate", (), {"from_messages": classmethod(lambda cls, msgs: FakePrompt())})
 
-    # Register fake langchain_core submodules in sys.modules
-    sys.modules["langchain_core"] = langcore
-    sys.modules["langchain_core.prompts"] = prompts
-    sys.modules["langchain_core.messages"] = messages
-    sys.modules["langchain_core.output_parsers"] = output_parsers
-    sys.modules["langchain_core.documents"] = documents
-    sys.modules["langchain_core.runnables"] = runnables
+    # Register fake langchain_core submodules in sys.modules using monkeypatch for cleanup
+    monkeypatch.setitem(sys.modules, "langchain_core", langcore)
+    monkeypatch.setitem(sys.modules, "langchain_core.prompts", prompts)
+    monkeypatch.setitem(sys.modules, "langchain_core.messages", messages)
+    monkeypatch.setitem(sys.modules, "langchain_core.output_parsers", output_parsers)
+    monkeypatch.setitem(sys.modules, "langchain_core.documents", documents)
+    monkeypatch.setitem(sys.modules, "langchain_core.runnables", runnables)
 
     # Also fake langgraph.graph to satisfy imports in src.agent
     langgraph = types.ModuleType("langgraph")
     langgraph_graph = types.ModuleType("langgraph.graph")
     langgraph_graph.END = object()
-    sys.modules["langgraph"] = langgraph
-    sys.modules["langgraph.graph"] = langgraph_graph
+    monkeypatch.setitem(sys.modules, "langgraph", langgraph)
+    monkeypatch.setitem(sys.modules, "langgraph.graph", langgraph_graph)
 
     # Import the function under test after fakes are in sys.modules
     from src.agent import transform_query_node
