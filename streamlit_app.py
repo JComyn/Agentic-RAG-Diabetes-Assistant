@@ -12,6 +12,17 @@ import streamlit as st
 import os
 import io
 import contextlib
+import logging
+import warnings
+
+# Silence noisy HF/Transformers warnings before project imports
+os.environ["TRANSFORMERS_VERBOSITY"] = "error"
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
+logging.getLogger("transformers").setLevel(logging.ERROR)
+warnings.filterwarnings("ignore", category=UserWarning, module="transformers")
+warnings.filterwarnings("ignore", category=FutureWarning, module="transformers")
+
 from typing import List, Tuple
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from langchain_core.runnables import RunnableConfig

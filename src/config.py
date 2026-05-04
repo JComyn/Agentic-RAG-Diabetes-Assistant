@@ -1,12 +1,17 @@
 import os
-from dotenv import load_dotenv
+try:
+	from dotenv import load_dotenv
+except Exception:
+	# dotenv not installed in the environment used by the linter/IDE; provide a noop fallback
+	def load_dotenv():
+		return None
 
 load_dotenv()
 
 # API Keys and Endpoints for GitHub Models
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "YOUR_GITHUB_TOKEN") # Use GITHUB_TOKEN env var
 GITHUB_MODELS_ENDPOINT = "https://models.github.ai/inference" # Specific endpoint
-LLM_MODEL_NAME = "mistral-ai/Mistral-Large-2411" # Specific model name from GitHub Models
+LLM_MODEL_NAME = "mistral-ai/mistral-medium-2505" # Specific model name from GitHub Models
 # API keys and endpoints for Mistral models (another option)
 MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY", "YOUR_MISTRAL_API_KEY") # Use MISTRAL_API_KEY env var
 LLM_MISTRAL_NAME = "mistral-large-latest" # It is the same as Mistral-Large-2411 but with a different name in the API
@@ -27,8 +32,8 @@ EMBEDDING_EVAL_ENDPOINT=os.getenv("EMBEDDING_EVAL_ENDPOINT")
 # NORMALIZE_EMBEDDINGS = True4
 
 # Como mi portatil no tiene capacidad de ejecutar estos modelos en local, necesito alguno via API
-EMBEDDING_MODEL_NAME = "text-embedding-3-large" # Opción OpenAI via GitHub Models
-EMBEDDING_MODEL_ENDPOINT = "https://models.inference.ai.azure.com" # Specific endpoint for OpenAI models
+EMBEDDING_MODEL_NAME = "openai/text-embedding-3-small" # Opción OpenAI via GitHub Models
+EMBEDDING_MODEL_ENDPOINT = "https://models.github.ai/inference" # Specific endpoint for OpenAI models
 
 # Paths and Directories
 VECTORSTORE_PATH = "./chroma_db_diabetes"
@@ -47,7 +52,7 @@ ENSEMBLE_K = 50 # Número de documentos finales tras Ensemble/Hybrid search
 RERANK_TOP_N = 50 # Número de documentos tras el re-ranking
 
 # Graph Configuration
-RECURSION_LIMIT = 5
+RECURSION_LIMIT = 10
 
 # Reliability configuration baseline
 EVIDENCE_SCORE_THRESHOLD = 0.62
